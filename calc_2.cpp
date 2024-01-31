@@ -57,14 +57,17 @@ float CalculateListSort(std::list<int>& lst) {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
 }
 
-std::vector<int> FillVector(std::vector<int> vec) {
-    for (int i = 0; i < vec.size(); i++) {
-        vec[i] = rand() % vec.size();
+std::vector<int> FillVector(std::vector<int> vec, int size) {
+    vec.resize(size);
+    for (int i = 0; i < size; i++) {
+        vec[i] = rand() % size;
     }
     return vec;
 }
 
 float CalculateVectorInsert(std::vector<int> vec) {
+    vec.reserve(1);
+
     auto start = std::chrono::high_resolution_clock::now();
 
     vec.push_back(31);
@@ -76,7 +79,7 @@ float CalculateVectorInsert(std::vector<int> vec) {
 
 float CalculateVectorAccess(std::vector<int> vec) {
     auto start = std::chrono::high_resolution_clock::now();
-
+    
     int randomIndex = rand() % vec.size();
     int value = vec[randomIndex];
 
@@ -131,7 +134,7 @@ float CalculateVectorSort(std::vector<int> vec) {
 std::map<int, int> FillMap(std::map<int, int>& mp, int size) {
     mp.clear();
     for (int i = 0; i < size; ++i) {
-        mp[rand() % size] = rand() % size;
+        mp[i] = rand() % size;
     }
     return mp;
 }
@@ -157,6 +160,28 @@ float CalculateMapErase(std::map<int, int>& mp) {
 
     auto stop = std::chrono::high_resolution_clock::now();
 
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
+}
+
+float CalculateListAccess(std::list<int>& lst) {
+    auto start = std::chrono::high_resolution_clock::now();
+    if (!lst.empty()) {
+        int index = 1000;
+        auto it = lst.begin();
+        std::advance(it, index);
+        int value = *it;  // Accessing the value
+    }
+    auto stop = std::chrono::high_resolution_clock::now();
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
+}
+
+float CalculateMapAccess(std::map<int, int>& mp) {
+    auto start = std::chrono::high_resolution_clock::now();
+    if (!mp.empty()) {
+        int key = 1000;
+        int value = mp[key];  // Accessing the value
+    }
+    auto stop = std::chrono::high_resolution_clock::now();
     return std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count();
 }
 
@@ -187,15 +212,19 @@ float CalculateMapIteration(std::map<int, int>& mp) {
 }
 
 int main() {
-    const int experimentsCount = 200000;
-    std::vector<float> insertResults, postEraseInsertResults, accessResults, eraseResults, resizeResults, findResults, sortResults;
-
-    std::vector<int> testVector(100000, 0);
+    const int experimentsCount = 50000;
+    std::vector<float> insertResults, testVectorResize, accessResults, eraseResults, resizeResults, findResults, sortResults;
+    const int containerSize = 10000;
+    std::vector<int> testVector;
+    testVector.reserve(containerSize);
     for (int i = 0; i < experimentsCount; i++) {
-        testVector = FillVector(testVector);
+        insertResults.push_back(CalculateVectorInsert(testVector));
+
+        testVector = FillVector(testVector, containerSize);
+
+        testVectorResize.push_back(CalculateVectorInsert(testVector));
 
         // First insertion
-        insertResults.push_back(CalculateVectorInsert(testVector));
 
         // Access
         accessResults.push_back(CalculateVectorAccess(testVector));
@@ -204,7 +233,7 @@ int main() {
         eraseResults.push_back(CalculateVectorErase(testVector));
         testVector.reserve(100001);
         // Insertion after erase
-        postEraseInsertResults.push_back(CalculateVectorInsert(testVector));
+        testVectorResize.push_back(CalculateVectorInsert(testVector));
 
         // Resize
         resizeResults.push_back(CalculateVectorResize(testVector));
@@ -225,55 +254,105 @@ int main() {
         };
 
     std::cout << "Average Insert Time (nanoseconds): " << calculateAverage(insertResults) << std::endl;
-    std::cout << "Average Insert Time After Erase (nanoseconds): " << calculateAverage(postEraseInsertResults) << std::endl;
+    std::cout << "Average Insert Time After Resize (nanoseconds): " << calculateAverage(testVectorResize) << std::endl;
     std::cout << "Average Access Time (nanoseconds): " << calculateAverage(accessResults) << std::endl;
     std::cout << "Average Erase Time (nanoseconds): " << calculateAverage(eraseResults) << std::endl;
     std::cout << "Average Resize Time (nanoseconds): " << calculateAverage(resizeResults) << std::endl;
     std::cout << "Average Find Time (nanoseconds): " << calculateAverage(findResults) << std::endl;
     std::cout << "Average Sort Time (nanoseconds): " << calculateAverage(sortResults) << std::endl;
 
-    std::vector<float> insertResultsSecond, postEraseInsertResultsSecond, accessResultsSecond, eraseResultsSecond, resizeResultsSecond, findResultsSecond, sortResultsSecond;
+    insertResults.clear();
+    testVectorResize.clear();
+    accessResults.clear();
+    eraseResults.clear();
+    resizeResults.clear();
+    findResults.clear();
+    sortResults.clear();
 
-    // Increased size of testVector to 20000 elements
-    std::vector<int> testVectorSecond(200000, 0);
+    // size = 2 * prevSize
+    std::vector<int> testVectorSecond(2 * containerSize, 0);
     for (int i = 0; i < experimentsCount; i++) {
-        testVectorSecond = FillVector(testVectorSecond);
 
-        // First insertion
-        insertResultsSecond.push_back(CalculateVectorInsert(testVectorSecond));
+        insertResults.push_back(CalculateVectorInsert(testVectorSecond));
 
-        // Access
-        accessResultsSecond.push_back(CalculateVectorAccess(testVectorSecond));
+        testVectorSecond = FillVector(testVectorSecond, 2 * containerSize);
 
-        // Erase
-        eraseResultsSecond.push_back(CalculateVectorErase(testVectorSecond));
-        testVectorSecond.reserve(200001); // Adjusted to the new size of the vector
-        // Insertion after erase
-        postEraseInsertResultsSecond.push_back(CalculateVectorInsert(testVectorSecond));
+        accessResults.push_back(CalculateVectorAccess(testVectorSecond));
+
+        eraseResults.push_back(CalculateVectorErase(testVectorSecond));
+
+        testVectorResize.push_back(CalculateVectorInsert(testVectorSecond));
 
         // Resize
-        resizeResultsSecond.push_back(CalculateVectorResize(testVectorSecond));
+        resizeResults.push_back(CalculateVectorResize(testVectorSecond));
 
         // Find
-        findResultsSecond.push_back(CalculateVectorFind(testVectorSecond));
+        findResults.push_back(CalculateVectorFind(testVectorSecond));
 
         // Sort
-        sortResultsSecond.push_back(CalculateVectorSort(testVectorSecond));
+        sortResults.push_back(CalculateVectorSort(testVectorSecond));
+
     }
 
-    std::cout << "Average Insert Time (nanoseconds): " << calculateAverage(insertResultsSecond) << std::endl;
-    std::cout << "Average Insert Time After Erase (nanoseconds): " << calculateAverage(postEraseInsertResultsSecond) << std::endl;
-    std::cout << "Average Access Time (nanoseconds): " << calculateAverage(accessResultsSecond) << std::endl;
-    std::cout << "Average Erase Time (nanoseconds): " << calculateAverage(eraseResultsSecond) << std::endl;
-    std::cout << "Average Resize Time (nanoseconds): " << calculateAverage(resizeResultsSecond) << std::endl;
-    std::cout << "Average Find Time (nanoseconds): " << calculateAverage(findResultsSecond) << std::endl;
-    std::cout << "Average Sort Time (nanoseconds): " << calculateAverage(sortResultsSecond) << std::endl;
+    std::cout << "Average Insert Time (nanoseconds): " << calculateAverage(insertResults) << std::endl;
+    std::cout << "Average Insert Time After Resize (nanoseconds): " << calculateAverage(testVectorResize) << std::endl;
+    std::cout << "Average Access Time (nanoseconds): " << calculateAverage(accessResults) << std::endl;
+    std::cout << "Average Erase Time (nanoseconds): " << calculateAverage(eraseResults) << std::endl;
+    std::cout << "Average Resize Time (nanoseconds): " << calculateAverage(resizeResults) << std::endl;
+    std::cout << "Average Find Time (nanoseconds): " << calculateAverage(findResults) << std::endl;
+    std::cout << "Average Sort Time (nanoseconds): " << calculateAverage(sortResults) << std::endl;
 
-    std::vector<float> listInsertResults, listEraseResults, listFindResults, listSortResults;
+    insertResults.clear();
+    testVectorResize.clear();
+    accessResults.clear();
+    eraseResults.clear();
+    resizeResults.clear();
+    findResults.clear();
+    sortResults.clear();
+
+    // Increased size of testVector to 20000 elements
+    std::vector<int> testVector3(3 * containerSize, 0);
+    for (int i = 0; i < experimentsCount; i++) {
+        insertResults.push_back(CalculateVectorInsert(testVector3));
+
+        testVector3 = FillVector(testVector3, 3 * containerSize);
+
+        // First insertion
+
+        // Access
+        accessResults.push_back(CalculateVectorAccess(testVector3));
+
+        // Erase
+        eraseResults.push_back(CalculateVectorErase(testVector3));
+        // Insertion after erase
+        testVectorResize.push_back(CalculateVectorInsert(testVector3));
+
+        // Resize
+        resizeResults.push_back(CalculateVectorResize(testVector3));
+
+        // Find
+        findResults.push_back(CalculateVectorFind(testVector3));
+
+        // Sort
+        sortResults.push_back(CalculateVectorSort(testVector3));
+
+    }
+
+    std::cout << "Average Insert Time (nano3s): " << calculateAverage(insertResults) << std::endl;
+    std::cout << "Average Insert Time After Resize (nano3s): " << calculateAverage(testVectorResize) << std::endl;
+    std::cout << "Average Access Time (nano3s): " << calculateAverage(accessResults) << std::endl;
+    std::cout << "Average Erase Time (nano3s): " << calculateAverage(eraseResults) << std::endl;
+    std::cout << "Average Resize Time (nano3s): " << calculateAverage(resizeResults) << std::endl;
+    std::cout << "Average Find Time (nano3s): " << calculateAverage(findResults) << std::endl;
+    std::cout << "Average Sort Time (nano3s): " << calculateAverage(sortResults) << std::endl;
+
+
+
+    std::vector<float> listInsertResults, listEraseResults, listFindResults, listSortResults, listAccessResults;
 
     std::list<int> testList;
     for (int i = 0; i < experimentsCount; i++) {
-        testList = FillList(testList, 100000); // Fill list with 10000 elements
+        testList = FillList(testList, containerSize); // Fill list with 10000 elements
 
         // Insert
         listInsertResults.push_back(CalculateListInsert(testList));
@@ -285,8 +364,11 @@ int main() {
         int searchValue = rand() % 10000;
         listFindResults.push_back(CalculateListFind(testList, searchValue));
 
+        listAccessResults.push_back(CalculateListAccess(testList));
+
         // Sort
         listSortResults.push_back(CalculateListSort(testList));
+
     }
 
     // Calculating and printing averages for list operations
@@ -295,39 +377,80 @@ int main() {
     std::cout << "Average List Erase Time (nanoseconds): " << calculateAverage(listEraseResults) << std::endl;
     std::cout << "Average List Find Time (nanoseconds): " << calculateAverage(listFindResults) << std::endl;
     std::cout << "Average List Sort Time (nanoseconds): " << calculateAverage(listSortResults) << std::endl;
+    std::cout << "Average List Access Time (nanoseconds): " << calculateAverage(listAccessResults) << std::endl;
 
-    std::vector<float> listInsertResultsSecond, listEraseResultsSecond, listFindResultsSecond, listSortResultsSecond;
+    listInsertResults.clear();
+    listEraseResults.clear();
+    listFindResults.clear();
+    listSortResults.clear();
+    listAccessResults.clear();
 
     std::list<int> testListSecond;
     for (int i = 0; i < experimentsCount; i++) {
-        testListSecond = FillList(testListSecond, 200000); // Fill list with 10000 elements
+        testListSecond = FillList(testListSecond, 2 * containerSize); // Fill list with 10000 elements
 
         // Insert
-        listInsertResultsSecond.push_back(CalculateListInsert(testListSecond));
+        listInsertResults.push_back(CalculateListInsert(testListSecond));
 
         // Erase
-        listEraseResultsSecond.push_back(CalculateListErase(testListSecond));
+        listEraseResults.push_back(CalculateListErase(testListSecond));
 
         // Find
         int searchValue = rand() % 10000;
-        listFindResultsSecond.push_back(CalculateListFind(testListSecond, searchValue));
+        listFindResults.push_back(CalculateListFind(testListSecond, searchValue));
 
         // Sort
-        listSortResultsSecond.push_back(CalculateListSort(testListSecond));
+        listSortResults.push_back(CalculateListSort(testListSecond));
+
+        listAccessResults.push_back(CalculateListAccess(testListSecond));
     }
 
-    // Calculating and printing averages for list operations
     std::cout << "List Operations:" << std::endl;
-    std::cout << "Average List Insert Time (nanoseconds): " << calculateAverage(listInsertResultsSecond) << std::endl;
-    std::cout << "Average List Erase Time (nanoseconds): " << calculateAverage(listEraseResultsSecond) << std::endl;
-    std::cout << "Average List Find Time (nanoseconds): " << calculateAverage(listFindResultsSecond) << std::endl;
-    std::cout << "Average List Sort Time (nanoseconds): " << calculateAverage(listSortResultsSecond) << std::endl;
+    std::cout << "Average List Insert Time (nanoseconds): " << calculateAverage(listInsertResults) << std::endl;
+    std::cout << "Average List Erase Time (nanoseconds): " << calculateAverage(listEraseResults) << std::endl;
+    std::cout << "Average List Find Time (nanoseconds): " << calculateAverage(listFindResults) << std::endl;
+    std::cout << "Average List Sort Time (nanoseconds): " << calculateAverage(listSortResults) << std::endl;
+    std::cout << "Average List Access Time (nanoseconds): " << calculateAverage(listAccessResults) << std::endl;
 
-    std::vector<float> mapInsertResults, mapEraseResults, mapFindResults, mapIterationResults;
+    listInsertResults.clear();
+    listEraseResults.clear();
+    listFindResults.clear();
+    listSortResults.clear();
+    listAccessResults.clear();
 
+    std::list<int> testList3;
+    for (int i = 0; i < experimentsCount; i++) {
+        testList3 = FillList(testList3, 3 * containerSize); // Fill list with 10000 elements
+
+        // Insert
+        listInsertResults.push_back(CalculateListInsert(testList3));
+
+        // Erase
+        listEraseResults.push_back(CalculateListErase(testList3));
+
+        // Find
+        int searchValue = rand() % 10000;
+        listFindResults.push_back(CalculateListFind(testList3, searchValue));
+
+                     // Sort
+        listSortResults.push_back(CalculateListSort(testList3));
+
+        listAccessResults.push_back(CalculateListAccess(testList3));
+    }
+
+    std::cout << "List Operations:" << std::endl;
+    std::cout << "Average List Insert Time (nano3s): " << calculateAverage(listInsertResults) << std::endl;
+    std::cout << "Average List Erase Time (nano3s): " << calculateAverage(listEraseResults) << std::endl;
+    std::cout << "Average List Find Time (nano3s): " << calculateAverage(listFindResults) << std::endl;
+    std::cout << "Average List Sort Time (nano3s): " << calculateAverage(listSortResults) << std::endl;
+    std::cout << "Average List Access Time (nano3s): " << calculateAverage(listAccessResults) << std::endl;
+
+
+    std::vector<float> mapInsertResults, mapEraseResults, mapFindResults, mapIterationResults, mapAccessResults = {};
+        
     std::map<int, int> testMap;
     for (int i = 0; i < experimentsCount; i++) {
-        testMap = FillMap(testMap, 100000); // Filling the map with 100000 elements
+        testMap = FillMap(testMap, containerSize); // Filling the map with 100000 elements
 
         // Insert
         mapInsertResults.push_back(CalculateMapInsert(testMap));
@@ -336,19 +459,88 @@ int main() {
         mapEraseResults.push_back(CalculateMapErase(testMap));
 
         // Find
-        int searchValue = rand() % 100000;
+        int searchValue = rand() % containerSize;
         mapFindResults.push_back(CalculateMapFind(testMap, searchValue));
 
         // Iteration
         mapIterationResults.push_back(CalculateMapIteration(testMap));
+
+        mapAccessResults.push_back(CalculateMapAccess(testMap));
+
     }
 
-    // Calculating and printing averages for map operations
     std::cout << "Map Operations:" << std::endl;
     std::cout << "Average Map Insert Time (nanoseconds): " << calculateAverage(mapInsertResults) << std::endl;
     std::cout << "Average Map Erase Time (nanoseconds): " << calculateAverage(mapEraseResults) << std::endl;
     std::cout << "Average Map Find Time (nanoseconds): " << calculateAverage(mapFindResults) << std::endl;
     std::cout << "Average Map Iteration Time (nanoseconds): " << calculateAverage(mapIterationResults) << std::endl;
+    std::cout << "Average Map Access Time (nanoseconds): " << calculateAverage(mapAccessResults) << std::endl;
+
+    mapInsertResults.clear();
+    mapEraseResults.clear();
+    mapFindResults.clear();
+    mapIterationResults.clear();
+    mapAccessResults.clear();
+
+    std::map<int, int> testMapSecond;
+    for (int i = 0; i < experimentsCount; i++) {
+        testMapSecond = FillMap(testMapSecond, 2 * containerSize); 
+        // Insert
+        mapInsertResults.push_back(CalculateMapInsert(testMapSecond));
+
+        // Erase
+        mapEraseResults.push_back(CalculateMapErase(testMapSecond));
+
+        // Find
+        int searchValue = rand() % 2 * containerSize;
+        mapFindResults.push_back(CalculateMapFind(testMapSecond, searchValue));
+
+        // Iteration
+        mapIterationResults.push_back(CalculateMapIteration(testMapSecond));
+
+        mapAccessResults.push_back(CalculateMapAccess(testMapSecond));
+
+    }
+
+    std::cout << "Map Operations:" << std::endl;
+    std::cout << "Average Map Insert Time (nanoseconds): " << calculateAverage(mapInsertResults) << std::endl;
+    std::cout << "Average Map Erase Time (nanoseconds): " << calculateAverage(mapEraseResults) << std::endl;
+    std::cout << "Average Map Find Time (nanoseconds): " << calculateAverage(mapFindResults) << std::endl;
+    std::cout << "Average Map Iteration Time (nanoseconds): " << calculateAverage(mapIterationResults) << std::endl;
+    std::cout << "Average Map Access Time (nanoseconds): " << calculateAverage(mapAccessResults) << std::endl;
+
+    mapInsertResults.clear();
+    mapEraseResults.clear();
+    mapFindResults.clear();
+    mapIterationResults.clear();
+    mapAccessResults.clear();
+
+    std::map<int, int> testMap3;
+    for (int i = 0; i < experimentsCount; i++) {
+        testMap3 = FillMap(testMap3, 3 * containerSize);
+        // Insert
+        mapInsertResults.push_back(CalculateMapInsert(testMap3));
+
+        // Erase
+        mapEraseResults.push_back(CalculateMapErase(testMap3));
+
+        // Find
+        int searchValue = rand() % 3 * containerSize;
+        mapFindResults.push_back(CalculateMapFind(testMap3, searchValue));
+
+        // Iteration
+        mapIterationResults.push_back(CalculateMapIteration(testMap3));
+
+        mapAccessResults.push_back(CalculateMapAccess(testMap3));
+
+    }
+
+    std::cout << "Map Operations:" << std::endl;
+    std::cout << "Average Map Insert Time (nano3s): " << calculateAverage(mapInsertResults) << std::endl;
+    std::cout << "Average Map Erase Time (nano3s): " << calculateAverage(mapEraseResults) << std::endl;
+    std::cout << "Average Map Find Time (nano3s): " << calculateAverage(mapFindResults) << std::endl;
+    std::cout << "Average Map Iteration Time (nano3s): " << calculateAverage(mapIterationResults) << std::endl;
+    std::cout << "Average Map Access Time (nano3s): " << calculateAverage(mapAccessResults) << std::endl;
 
     return 0;
 }
