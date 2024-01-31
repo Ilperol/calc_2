@@ -2,22 +2,39 @@
 
 Vector with size n:
 Average Insert Time (nanoseconds): 603.77
+
 Average Insert Time After Resize (nanoseconds): 3340.64
+
 Average Access Time (nanoseconds): 108.218
+
 Average Erase Time (nanoseconds): 5785.5
+
 Average Find Time (nanoseconds): 3906.44
+
 Average Sort Time (nanoseconds): 1.52367e+06
+
 Vector with size 2*n
+
 Average Insert Time (nanoseconds): 673.75
+
 Average Insert Time After Resize (nanoseconds): 5258.62
+
 Average Access Time (nanoseconds): 130.478
+
 Average Erase Time (nanoseconds): 11399.8
+
 Average Resize Time (nanoseconds): 4953.94
+
 Average Sort Time (nanoseconds): 4.47908e+06
+
 Vector with size 3*n
+
 Average Insert Time (nano3s): 730.7
+
 Average Insert Time After Resize (nano3s): 8981.81
+
 Average Access Time (nano3s): 172.994
+
 Average Erase Time (nano3s): 17306.4
 Average Find Time (nano3s): 12769.2
 Average Sort Time (nano3s): 7.7817e+06
